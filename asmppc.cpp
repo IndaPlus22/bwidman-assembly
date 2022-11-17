@@ -5,9 +5,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <bitset>
 
 // Split string with space as separator
-std::vector<std::string>& split(const std::string& s) {
+std::vector<std::string>& split(std::string& s) {
+    s += ' ';
     static auto split_s = std::vector<std::string>();
     size_t index1 = 0, index2 = 0; // Start of word and end of word
 
@@ -44,25 +46,26 @@ int main(int argc, char* argv[]) {
     std::string line;
     // Read file until there are no more lines (EOF)
     while (std::getline(input, line)) {
-        auto arguments = split(line);
-        char bin_instruction;
+        std::vector<std::string>& arguments = split(line);
+        unsigned char bin_instruction;
 
         if (arguments[0][0] == '#') {
             // One of instruction 1-5
             std::string instruction = arguments[1];
-            std::string hl = arguments[2]; // Crash
+            
             if (instruction == "=" && arguments[2].length() == 1) { // Assign but not register on right hand side
                 // Only RI-type
-                char opcode = 0b100 << 5;
-                char reg = (int(arguments[0][1]) - 1) << 3;
+                unsigned char opcode = 0b100 << 5;
+                char reg = (int(arguments[0][1]) - 48 - 1);
+                reg = reg << 3;
                 char imm = std::stoi(arguments[2]);
                 
                 bin_instruction = opcode + reg + imm;
             } else {
                 // 2R-type
-                char opcode;
-                char reg1 = (int(arguments[0][1]) - 1) << 3;
-                char reg2 = (int(arguments[2][1]) - 1) << 1;
+                unsigned char opcode;
+                char reg1 = (int(arguments[0][1]) - 48 - 1) << 3;
+                char reg2 = (int(arguments[2][1]) - 48 - 1) << 1;
 
                 if (instruction == "+") {
                     opcode = 0b000 << 5;
@@ -81,14 +84,14 @@ int main(int argc, char* argv[]) {
 
             if (instruction == "if") {
                 // Only RI-type
-                char opcode = 0b111 << 5;
-                char reg = (int(arguments[2][1]) - 1) << 3;
+                unsigned char opcode = 0b111 << 5;
+                char reg = (int(arguments[2][1]) - 48 - 1) << 3;
                 char imm = std::stoi(arguments[3]);
 
                 bin_instruction = opcode + reg + imm;
             } else {
                 // I-type
-                char opcode;
+                unsigned char opcode;
                 char imm = std::stoi(arguments[1]);
 
                 if (instruction == "syscall") {
@@ -99,10 +102,10 @@ int main(int argc, char* argv[]) {
                 bin_instruction = opcode + imm;
             }
         }
-        std::cout << "Instruction: ";
-        std::cout << std::ios::binary << bin_instruction << std::endl;
+        std::cout << std::bitset<8>(bin_instruction) << std::endl;
         // Output the instruction byte to file
-        output.write(&bin_instruction, 1);
+        output.write((char*)&bin_instruction, 1);
+        arguments.clear();
     }
 
     // Close files
