@@ -23,13 +23,13 @@ std::vector<std::string>& split(std::string& s) {
     return split_s;
 }
 
-byte signed_imm(byte number, int size) {
-    number = abs(number);
+byte signed_imm(int number, int size) {
+    byte imm = abs(number);
     if (number < 0) {
         byte sign = 0b1 << (size - 1);
-        number |= sign; // Set signed bit to 1
+        imm |= sign; // Set signed bit to 1
     }
-    return number;
+    return imm;
 }
 
 int main(int argc, char* argv[]) {
@@ -53,6 +53,8 @@ int main(int argc, char* argv[]) {
     std::string line;
     // Read file until there are no more lines (EOF)
     while (std::getline(input, line)) {
+        if (line == "")
+            continue;
         std::vector<std::string>& arguments = split(line);
         byte bin_instruction;
 
@@ -60,7 +62,7 @@ int main(int argc, char* argv[]) {
             // One of instruction 1-5
             std::string instruction = arguments[1];
             
-            if (instruction == "=" && arguments[2].length() == 1) { // Assign but not register on right hand side
+            if (instruction == "=" && arguments[2][0] != '#') { // Assign but not register on right hand side
                 // Only RI-type
                 byte opcode = 0b100 << 5;
                 byte a = (int(arguments[0][1]) - 48 - 1) << 3;
@@ -91,9 +93,11 @@ int main(int argc, char* argv[]) {
             if (instruction == "if") {
                 // Only RI-type
                 byte opcode = 0b111 << 5;
-                byte a = (int(arguments[2][1]) - 48 - 1) << 3;
+                byte a = (int(arguments[1][1]) - 48 - 1) << 3;
+                int number = std::stoi(arguments[3]);
+                number = number > 0 ? number - 1 : number + 1;
                 // Cannot jump 0 rows so -1 enables input of 1-4
-                byte imm = signed_imm(std::stoi(arguments[3]), 3);
+                byte imm = signed_imm(number, 3);
 
                 bin_instruction = opcode + a + imm;
             } else {
@@ -106,7 +110,9 @@ int main(int argc, char* argv[]) {
                 } else /*jump*/ {
                     opcode = 0b110 << 5;
                     // Cannot jump 0 rows so -1 enables input of 1-4
-                    imm = signed_imm(std::stoi(arguments[1]) - 1, 5);
+                    int number = std::stoi(arguments[3]);
+                    number = number > 0 ? number - 1 : number + 1;
+                    imm = signed_imm(number, 5);
                 }
                 bin_instruction = opcode + imm;
             }

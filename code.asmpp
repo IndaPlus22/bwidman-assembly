@@ -1,4 +1,0 @@
-syscall 1
-#2 = 3
-#1 += #2
-syscall 0
