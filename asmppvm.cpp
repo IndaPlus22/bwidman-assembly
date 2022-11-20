@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
             // Jump (I)
             case 0b110:
             immI += immI / abs(immI); // One step away from 0
-            file.seekg(immI, std::ios::cur);
+            file.seekg(immI - 1, std::ios::cur); // -1 because it jumps down when looping again
             action = "jump " + std::to_string(immI);
             break;
             // Jump if true (I)
