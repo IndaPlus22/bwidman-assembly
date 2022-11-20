@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
     // Run executable
     //
     int registers[4] = {};
+    bool conditional = false;
     
     byte byte_instruction;
     while (file.read((char*)&byte_instruction, 1)) {
@@ -52,13 +53,13 @@ int main(int argc, char* argv[]) {
             case 0b000: registers[a] += registers[b];
                 action = "#" + std::to_string(a+1) + " += " + "#" + std::to_string(b+1);
                 break;
-            // Set equal to (2R)
-            case 0b001: registers[a] = registers[a] == registers[b];
-                action = "#" + std::to_string(a+1) + " == " + "#" + std::to_string(b+1);
+            // Add immediate (RI)
+            case 0b001: registers[a] = registers[a] += immRI;
+                action = "#" + std::to_string(a+1) + " += " + std::to_string(immRI);
                 break;
             // Set less than (2R)
-            case 0b010: registers[a] = registers[a] < registers[b];
-                action = "#" + std::to_string(a+1) + " <= " + "#" + std::to_string(b+1);
+            case 0b010: conditional = registers[a] < registers[b];
+                action = "#" + std::to_string(a+1) + " < " + "#" + std::to_string(b+1);
                 break;
             // Move (2R)
             case 0b011: registers[a] = registers[b];
@@ -79,14 +80,17 @@ int main(int argc, char* argv[]) {
                 action = "syscall " + std::to_string(immI);
                 break;
             // Jump (I)
-            case 0b110: file.seekg(immI + 1, std::ios::cur);
-            action = "jump " + std::to_string(immI+1);
+            case 0b110:
+            immI += immI / abs(immI); // One step away from 0
+            file.seekg(immI, std::ios::cur);
+            action = "jump " + std::to_string(immI);
             break;
-            // Jump if true (RI)
+            // Jump if true (I)
             case 0b111:
-                if (registers[a])
-                    file.seekg(immRI + 1, std::ios::cur);
-                action = "if #" + std::to_string(a+1) + " jump " + std::to_string(immRI+1); 
+                immI += immI / abs(immI); // One step away from 0
+                if (conditional)
+                    file.seekg(immI - 1, std::ios::cur); // -1 because it jumps down when looping again
+                action = "jumpif " + std::to_string(immI);
                 break;
         }
         // Debugging tools
